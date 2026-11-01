@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KDD Analytics Lab | Nghiên cứu Phân cụm Sản phẩm dựa trên Hành vi Duyệt xem & Tương tác</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- TOP NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="brand-text">
+          <h1>ECOMMERCE DATA MINING & CLUSTERING LAB</h1>
+          <p>Nghiên cứu về Khai phá Dữ liệu & Phân cụm Sản phẩm dựa trên Hành vi Duyệt xem và Tương tác Người dùng</p>
+        </div>
+      </div>
+      
+      <div class="nav-tabs">
+        <button class="tab-btn active" data-tab="overview">
+          <i class="fas fa-chart-pie"></i> Tổng quan KDD
+        </button>
+        <button class="tab-btn" data-tab="personas">
+          <i class="fas fa-users-viewfinder"></i> 5 Chân dung Persona
+        </button>
+        <button class="tab-btn" data-tab="explorer">
+          <i class="fas fa-search"></i> Tra cứu 42,860 Sản phẩm
+        </button>
+        <button class="tab-btn" data-tab="benchmark">
+          <i class="fas fa-balance-scale"></i> Đối sánh Đa Mô hình
+        </button>
+        <button class="tab-btn" data-tab="simulator">
+          <i class="fas fa-sliders"></i> Bộ Giả lập Can thiệp
+        </button>
+        <button class="tab-btn" data-tab="sql">
+          <i class="fas fa-terminal"></i> Live DuckDB SQL
+        </button>
+      </div>
+
+      <div class="live-badge">
+        <div class="pulse-dot"></div>
+        <span>DuckDB Engine Active</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-content">
+
+    <!-- TAB 1: OVERVIEW & FUNNEL -->
+    <section id="tab-overview" class="tab-pane active">
+      <!-- KPI GRID -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            <i class="fas fa-database"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>Quy mô Sự kiện</h4>
+            <div class="kpi-value" id="kpi-events">--</div>
+            <span class="kpi-badge" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;">DuckDB + Parquet (320 MB)</span>
+          </div>
+        </div>
+        
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+            <i class="fas fa-boxes-stacked"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>Sản phẩm Nghiên cứu</h4>
+            <div class="kpi-value" id="kpi-products">--</div>
+            <span class="kpi-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">Đạt Views >= 10</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>Doanh thu Toàn sàn</h4>
+            <div class="kpi-value" id="kpi-revenue">--</div>
+            <span class="kpi-badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">Doanh thu ước tính</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+            <i class="fas fa-cart-arrow-down"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>Tỷ lệ Hủy Giỏ TB</h4>
+            <div class="kpi-value" id="kpi-removal">--</div>
+            <span class="kpi-badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">Điểm nghẽn phễu chốt</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="kpi-info">
+            <h4>Tỷ lệ Chuyển đổi TB</h4>
+            <div class="kpi-value" id="kpi-conversion">--</div>
+            <span class="kpi-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">Toàn bộ hành trình</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLICKSTREAM FUNNEL -->
+      <div class="glass-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-filter"></i> Phễu Tương tác Hành vi Đa tầng (Clickstream Purchase Funnel)
+          </div>
+          <small style="color: var(--text-dim);">Dữ liệu khai phá từ 20,692,840 sự kiện</small>
+        </div>
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px;">
+          Khai phá dữ liệu bóc tách sự biến đổi tâm lý người dùng qua từng điểm chạm. Điểm rơi rụng lớn nhất xảy ra giữa bước <b>Thêm vào giỏ</b> và <b>Thanh toán</b>, tạo nên cụm sản phẩm gây phân vân.
+        </p>
+        <div class="funnel-container" id="funnel-steps-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- CHARTS ROW: PARETO & EXECUTIVE SUMMARY -->
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fas fa-chart-column"></i> Quy luật Pareto: Tỷ trọng Danh mục vs Tỷ trọng Doanh số
+            </div>
+            <span class="tag-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">80 / 20 Law</span>
+          </div>
+          <div style="height: 320px;">
+            <canvas id="paretoChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fas fa-lightbulb"></i> Bức tranh Khai phá Tri thức Cốt lõi
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px;">
+            <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 12px; border-radius: 4px;">
+              <b style="color: #10b981;">1. Sự phụ thuộc cực đoan vào Star Bestsellers:</b>
+              <p style="color: var(--text-muted); margin-top: 4px;">Chỉ <b>24.9% sản phẩm</b> tạo ra tới <b>75.3% doanh thu</b>. Sàn đang chịu rủi ro dòng tiền rất cao nếu nhóm này đứt gãy cung ứng.</p>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px;">
+              <b style="color: #f59e0b;">2. Mỏ vàng thất thoát - High Hesitation:</b>
+              <p style="color: var(--text-muted); margin-top: 4px;">Chiếm <b>33.6% danh mục</b>, có lượng bỏ giỏ rất cao nhưng tỷ lệ hủy giỏ lên tới <b>85%</b> do ma sát giá ship hoặc thiếu ưu đãi chốt đơn.</p>
+            </div>
+            <div style="background: rgba(59, 130, 246, 0.08); border-left: 4px solid #3b82f6; padding: 12px; border-radius: 4px;">
+              <b style="color: #3b82f6;">3. Chuyển đổi bốc đồng - Impulse Add-on:</b>
+              <p style="color: var(--text-muted); margin-top: 4px;">Tỷ lệ chốt đơn kỷ lục <b>69.6%</b> với giá chỉ $1.38, là chìa khóa để bán kèm tại bước thanh toán nhằm tăng giá trị trung bình giỏ hàng (AOV).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONTHLY TIME-SERIES TREND ANALYSIS (10/2019 - 02/2020) -->
+      <div class="glass-card" style="margin-top: 24px;">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-calendar-days"></i> Phân tích Động thái Xu hướng theo Thời gian (Tháng 10/2019 ➜ Tháng 02/2020)
+          </div>
+          <span class="tag-badge" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">5 Tháng Thực nghiệm Clickstream</span>
+        </div>
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 16px;">
+          Khai phá chuỗi thời gian trên 20.7 triệu sự kiện chỉ ra sự biến thiên mạnh mẽ của hành vi người dùng qua các mùa mua sắm: <b>Đỉnh doanh số bùng nổ vào Black Friday (11/2019)</b> và <b>Lưu lượng người dùng đạt đỉnh vào mùa sắm Tết (01/2020)</b>.
+        </p>
+
+        <!-- MONTHLY CHART -->
+        <div style="height: 340px; margin-bottom: 24px;">
+          <canvas id="monthlyTrendChart"></canvas>
+        </div>
+
+        <!-- 5 MONTH TIMELINE CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+          <div class="analysis-block" style="margin-bottom: 0; padding: 14px;">
+            <span class="tag-badge" style="background: #e0f2fe; color: #0369a1; margin-bottom: 6px;">10/2019</span>
+            <b style="display:block; color: #0f172a; font-size: 13px;">Khởi động Quý 4</b>
+            <small style="color: var(--text-dim);">Doanh thu: <b>$1.21M</b></small><br>
+            <small style="color: var(--text-dim);">Tỷ lệ hủy: <b>61.8%</b> (Thấp nhất)</small>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Tương tác ổn định, tâm lý người mua chuẩn bị cho đợt khuyến mãi cuối năm.</p>
+          </div>
+
+          <div class="analysis-block" style="margin-bottom: 0; padding: 14px; border-top: 3px solid #ef4444; background: #fff5f5;">
+            <span class="tag-badge" style="background: #fee2e2; color: #b91c1c; margin-bottom: 6px;">11/2019 ★ PEAK</span>
+            <b style="display:block; color: #991b1b; font-size: 13px;">Đỉnh Black Friday</b>
+            <small style="color: var(--text-dim);">Doanh thu: <b style="color: #b91c1c;">$1.53M (Kỷ lục)</b></small><br>
+            <small style="color: var(--text-dim);">Đơn mua: <b>322K đơn</b></small>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Cầu mua sắm bùng nổ. Lượt hủy giỏ cũng tăng vọt lên 924K do nghẽn thanh toán.</p>
+          </div>
+
+          <div class="analysis-block" style="margin-bottom: 0; padding: 14px;">
+            <span class="tag-badge" style="background: #f1f5f9; color: #475569; margin-bottom: 6px;">12/2019</span>
+            <b style="display:block; color: #0f172a; font-size: 13px;">Giáng sinh & Nghỉ lễ</b>
+            <small style="color: var(--text-dim);">Doanh thu: <b>$1.08M</b></small><br>
+            <small style="color: var(--text-dim);">Tỷ lệ hủy: <b>71.7%</b></small>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Lưu lượng hạ nhiệt nhẹ do hạn chót giao hàng trước Giáng sinh và khách đã chi tiêu mạnh ở tháng 11.</p>
+          </div>
+
+          <div class="analysis-block" style="margin-bottom: 0; padding: 14px; border-top: 3px solid #10b981; background: #f0fdf4;">
+            <span class="tag-badge" style="background: #dcfce7; color: #15803d; margin-bottom: 6px;">01/2020 ★ USERS</span>
+            <b style="display:block; color: #166534; font-size: 13px;">Cao điểm Sắm Tết</b>
+            <small style="color: var(--text-dim);">Doanh thu: <b style="color: #15803d;">$1.32M</b></small><br>
+            <small style="color: var(--text-dim);">Active Users: <b>409K (Đỉnh)</b></small>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Lượng người dùng hoạt động đạt đỉnh kỷ lục sắm sửa mỹ phẩm làm đẹp đón năm mới.</p>
+          </div>
+
+          <div class="analysis-block" style="margin-bottom: 0; padding: 14px;">
+            <span class="tag-badge" style="background: #fdf4ff; color: #a21caf; margin-bottom: 6px;">02/2020</span>
+            <b style="display:block; color: #0f172a; font-size: 13px;">Valentine & Sau Tết</b>
+            <small style="color: var(--text-dim);">Doanh thu: <b>$1.20M</b></small><br>
+            <small style="color: var(--text-dim);">Đơn mua: <b>241K đơn</b></small>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Thị trường duy trì ổn định với các dòng sản phẩm quà tặng và chăm sóc da đầu xuân.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: PERSONAS DEEP DIVE -->
+    <section id="tab-personas" class="tab-pane">
+      <!-- PERSONA SELECTOR CARDS -->
+      <div class="persona-selector" id="persona-cards-selector">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- PERSONA DETAIL PANEL -->
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title" id="detail-persona-title">
+            <!-- Dynamic Persona Name -->
+          </div>
+          <small style="color: var(--text-dim);">Chân dung hành vi & Khuyến nghị chiến lược</small>
+        </div>
+
+        <!-- STATS BAR -->
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 24px; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); text-align: center;">
+          <div><small style="color: var(--text-dim); font-size: 11px;">Số lượng SP</small><br><b id="p-kpi-count" style="font-size: 16px; color: #0f172a;">--</b></div>
+          <div><small style="color: var(--text-dim); font-size: 11px;">Tổng Doanh số</small><br><b id="p-kpi-rev" style="font-size: 16px; color: #2563eb;">--</b></div>
+          <div><small style="color: var(--text-dim); font-size: 11px;">Lượt xem TB</small><br><b id="p-kpi-views" style="font-size: 16px; color: #0f172a;">--</b></div>
+          <div><small style="color: var(--text-dim); font-size: 11px;">Tỷ lệ Hủy giỏ TB</small><br><b id="p-kpi-removal" style="font-size: 16px; color: #e11d48;">--</b></div>
+          <div><small style="color: var(--text-dim); font-size: 11px;">Tỷ lệ Chốt TB</small><br><b id="p-kpi-conv" style="font-size: 16px; color: #059669;">--</b></div>
+          <div><small style="color: var(--text-dim); font-size: 11px;">Đơn giá TB</small><br><b id="p-kpi-price" style="font-size: 16px; color: #d97706;">--</b></div>
+        </div>
+
+        <!-- DETAIL GRID -->
+        <div class="persona-detail-grid">
+          <!-- LEFT: QUALITATIVE ANALYSIS -->
+          <div>
+            <div class="analysis-block" style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #2563eb; margin-bottom: 16px;">
+              <h5 style="color: #1e40af; font-size: 14px;"><i class="fas fa-circle-question"></i> Bản chất Dễ hiểu: Nhóm này là gì?</h5>
+              <p id="p-plain-explanation" style="font-size: 14px; font-weight: 600; color: #1e293b; line-height: 1.6; margin: 0;"></p>
+            </div>
+
+            <div class="analysis-block">
+              <h5><i class="fas fa-stethoscope" style="color: #0284c7;"></i> Nhận xét Thực trạng Hiện tại (Diagnostic Assessment)</h5>
+              <p id="p-current-state" style="font-size: 13.5px; color: var(--text-muted);"></p>
+            </div>
+            
+            <div class="analysis-block">
+              <h5><i class="fas fa-magnifying-glass-chart" style="color: #d97706;"></i> Nguyên nhân Tiềm ẩn & Tâm lý Người dùng</h5>
+              <p id="p-root-cause" style="font-size: 13.5px; color: var(--text-muted);"></p>
+            </div>
+
+            <div class="analysis-block">
+              <h5><i class="fas fa-crystal-ball" style="color: #7c3aed;"></i> Dự đoán Xu hướng Tương lai & Vòng đời Sản phẩm</h5>
+              <p id="p-future-prediction" style="font-size: 13.5px; color: var(--text-muted);"></p>
+            </div>
+
+            <div class="analysis-block" style="border-left: 4px solid #059669;">
+              <h5><i class="fas fa-bolt" style="color: #059669;"></i> Chiến lược Can thiệp Dữ liệu Tức thì (Action Matrix)</h5>
+              <ul class="action-list" id="p-actions-list">
+                <!-- Dynamic actions -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- RIGHT: RADAR & QUICK STATS -->
+          <div>
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 20px;">
+              <h5 style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-align: center;">
+                Biểu đồ Radar 5 Chiều Năng lực Phân hóa
+              </h5>
+              <div style="height: 280px;">
+                <canvas id="personaRadarChart"></canvas>
+              </div>
+            </div>
+
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+              <h5 style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">
+                Top Sản phẩm Mẫu trong Bộ dữ liệu
+              </h5>
+              <div style="overflow-x: auto;">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Thương hiệu</th>
+                      <th>Giá</th>
+                      <th>Xem</th>
+                      <th>Mua</th>
+                      <th>Doanh thu</th>
+                      <th>Hủy giỏ</th>
+                      <th>Chốt</th>
+                    </tr>
+                  </thead>
+                  <tbody id="p-top-products-body">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CASE STUDY: BÓC TÁCH ĐÍCH DANH SẢN PHẨM TIÊU BIỂU -->
+        <div class="case-study-section">
+          <div class="card-header" style="border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+              <h4 style="font-size: 16px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-box-open" style="color: var(--accent-blue);"></i>
+                Case Study Thực Tế: Bóc Tách Đích Danh Sản Phẩm Tiêu Biểu Trong Nhóm Này
+              </h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                Dữ liệu thực chứng trích xuất từ 20.7 triệu sự kiện, chỉ rõ tên mặt hàng, hãng sản xuất và giải mã tâm lý vì sao sản phẩm rơi vào nhóm này:
+              </p>
+            </div>
+            <span class="tag-badge" style="background: #eff6ff; color: #2563eb; font-weight: 700;">Data-Driven Case Study</span>
+          </div>
+          <div id="p-case-studies-list" class="case-studies-grid">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PRODUCT EXPLORER -->
+    <section id="tab-explorer" class="tab-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-table-list"></i> Tra cứu & Lọc 42,860 Sản phẩm Nghiên cứu
+          </div>
+          <div style="font-size: 13px; color: var(--text-dim);" id="filtered-count">-- Sản phẩm</div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="table-controls">
+          <input type="text" id="prod-search-input" class="search-input" placeholder="Tìm theo ID sản phẩm hoặc Tên thương hiệu (ví dụ: shiseido, mac, loreal, 5800358)...">
+          
+          <select id="prod-persona-select" class="filter-select">
+            <option value="all">Tất cả Nhóm Sản phẩm (5 Cụm)</option>
+            <option value="Bán chạy">1. Bán chạy Chủ lực (Cầu cao - Chốt nhanh)</option>
+            <option value="Mua kèm">2. Tiện tay Mua kèm (Giá siêu rẻ - Chốt ngay)</option>
+            <option value="Nghẽn">3. Nghẽn Thanh toán (Bỏ giỏ nhiều - Hủy 85%)</option>
+            <option value="Cao cấp">4. Giá trị cao - Cân nhắc kỹ (Lợi nhuận lớn)</option>
+            <option value="Ngủ đông">5. Ít tương tác - Tồn kho ngủ đông</option>
+          </select>
+
+          <select id="prod-sort-select" class="filter-select">
+            <option value="rev_desc">Doanh số cao nhất</option>
+            <option value="view_desc">Lượt xem nhiều nhất</option>
+            <option value="rem_desc">Tỷ lệ hủy giỏ cao nhất (Hesitation)</option>
+            <option value="conv_desc">Tỷ lệ chuyển đổi cao nhất</option>
+            <option value="price_desc">Đơn giá cao nhất</option>
+          </select>
+        </div>
+
+        <!-- TABLE -->
+        <div style="overflow-x: auto; margin-bottom: 16px;">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Mã SP</th>
+                <th>Thương hiệu</th>
+                <th>Phân cụm Persona</th>
+                <th>Đơn giá</th>
+                <th>Lượt xem</th>
+                <th>Đơn mua</th>
+                <th>Doanh thu ước tính</th>
+                <th>Tỷ lệ Hủy giỏ</th>
+                <th>Tỷ lệ Chốt đơn</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PAGINATION -->
+        <div style="display: flex; justify-content: space-between; align-items: center;" id="table-pagination">
+          <!-- Dynamic -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BENCHMARK -->
+    <section id="tab-benchmark" class="tab-pane">
+      <div class="benchmark-cards" id="benchmark-cards-container">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-chart-simple"></i> So sánh Trực quan Chỉ số Hình học Cụm (Silhouette vs Davies-Bouldin)
+          </div>
+          <span class="tag-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">K-Means Balanced Champion</span>
+        </div>
+        <div style="height: 350px;">
+          <canvas id="benchmarkChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SIMULATOR -->
+    <section id="tab-simulator" class="tab-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-microchip"></i> Bộ Giả lập Can thiệp Hành vi Thời gian thực (Real-Time Trigger Simulator)
+          </div>
+          <small style="color: var(--text-dim);">Dự phóng mức độ phục hồi doanh thu khi can thiệp vào điểm nghẽn phễu</small>
+        </div>
+
+        <div class="simulator-container">
+          <!-- INPUTS -->
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <h4 style="font-size: 15px; color: #fff; margin-bottom: 16px;">1. Thiết lập Đặc tính Sản phẩm Đầu vào</h4>
+            
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Đơn giá sản phẩm:</span>
+                <b id="val-sim-price" style="color: #38bdf8;">$4.50</b>
+              </div>
+              <input type="range" id="sim-price" class="slider-input" min="0.5" max="50" step="0.5" value="4.5">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Lượt xem hàng tháng (Views):</span>
+                <b id="val-sim-views" style="color: #38bdf8;">80</b>
+              </div>
+              <input type="range" id="sim-views" class="slider-input" min="10" max="1500" step="10" value="80">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Lượt đưa vào giỏ (Carts):</span>
+                <b id="val-sim-carts" style="color: #38bdf8;">50</b>
+              </div>
+              <input type="range" id="sim-carts" class="slider-input" min="5" max="300" step="5" value="50">
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <span>Tỷ lệ Hủy giỏ hàng (Cart Removal Rate):</span>
+                <b id="val-sim-removal" style="color: #f43f5e;">85%</b>
+              </div>
+              <input type="range" id="sim-removal" class="slider-input" min="20" max="98" step="1" value="85">
+            </div>
+
+            <h4 style="font-size: 15px; color: #fff; margin: 20px 0 12px;">2. Cơ chế Can thiệp Kích hoạt (Data-driven Triggers)</h4>
+            
+            <label class="toggle-item">
+              <input type="checkbox" id="sim-chk-coupon" checked>
+              <div>
+                <b>Exit-Intent Trigger: Tặng Voucher 6%</b>
+                <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">Tự động popup mã giảm giá khi bắt được hành vi chuẩn bị rời giỏ hàng</p>
+              </div>
+            </label>
+
+            <label class="toggle-item">
+              <input type="checkbox" id="sim-chk-ship" checked>
+              <div>
+                <b>Freeship Threshold: Trợ giá phí vận chuyển</b>
+                <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">Giảm rào cản phí giao hàng ở bước thanh toán cuối cùng</p>
+              </div>
+            </label>
+
+            <label class="toggle-item">
+              <input type="checkbox" id="sim-chk-bundle">
+              <div>
+                <b>Cross-sell: Gợi ý kèm sản phẩm Impulse Add-on</b>
+                <p style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">Tăng xác suất chốt đơn bằng quà tặng mua kèm giá $1</p>
+              </div>
+            </label>
+          </div>
+
+          <!-- OUTPUTS -->
+          <div class="sim-output-card">
+            <h4 style="font-size: 15px; color: #cbd5e1; margin-bottom: 8px;">Dự phóng Kết quả Can thiệp Thuật toán</h4>
+            
+            <div style="margin-bottom: 16px;">
+              <small style="color: var(--text-dim);">Xếp hạng phân cụm tự động:</small>
+              <div id="sim-out-persona" style="margin-top: 6px;">--</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+              <div style="background: rgba(0,0,0,0.3); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                <small style="color: var(--text-dim);">Doanh số cơ sở (Hiện tại):</small>
+                <h3 id="sim-out-base-rev" style="color: #fff; margin-top: 4px;">$0</h3>
+              </div>
+              <div style="background: rgba(239, 68, 68, 0.1); padding: 14px; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.3);">
+                <small style="color: #f87171;">Tổn thất rò rỉ bỏ giỏ:</small>
+                <h3 id="sim-out-leakage" style="color: #f87171; margin-top: 4px;">$0</h3>
+              </div>
+              <div style="background: rgba(16, 185, 129, 0.1); padding: 14px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.3);">
+                <small style="color: #34d399;">Doanh số sau Can thiệp:</small>
+                <h3 id="sim-out-new-rev" style="color: #34d399; margin-top: 4px;">$0</h3>
+              </div>
+              <div style="background: rgba(56, 189, 248, 0.1); padding: 14px; border-radius: var(--radius-sm); border: 1px solid rgba(56, 189, 248, 0.3);">
+                <small style="color: #38bdf8;">Doanh thu Thuần phục hồi:</small>
+                <h3 id="sim-out-gain" style="color: #38bdf8; margin-top: 4px;">+$0</h3>
+              </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border-left: 4px solid var(--accent-blue); padding: 14px; border-radius: 4px;">
+              <b style="color: #38bdf8; font-size: 13.5px;"><i class="fas fa-compass"></i> Đánh giá & Khuyến nghị Dữ liệu:</b>
+              <p id="sim-rec-text" style="font-size: 13px; color: var(--text-muted); margin-top: 6px;"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: DUCKDB SQL CONSOLE -->
+    <section id="tab-sql" class="tab-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-terminal"></i> Live DuckDB SQL Analytics Playground
+          </div>
+          <small style="color: var(--text-dim);">Truy vấn trực tiếp trên cơ sở dữ liệu DuckDB (clustering_results.duckdb)</small>
+        </div>
+
+        <!-- PRESETS -->
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Các mẫu truy vấn nghiệp vụ nhanh:</p>
+        <div class="sql-presets-bar" id="sql-presets-container">
+          <!-- Dynamic -->
+        </div>
+
+        <!-- EDITOR -->
+        <textarea id="sql-query-editor" class="sql-editor" spellcheck="false"></textarea>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <button id="run-sql-btn" class="btn-primary">
+            <i class="fas fa-play"></i> Thực thi Truy vấn (Run SQL)
+          </button>
+          <div id="sql-status-bar" style="font-size: 13px; color: var(--text-muted);">
+            Sẵn sàng thực thi
+          </div>
+        </div>
+
+        <!-- RESULTS TABLE -->
+        <div style="overflow-x: auto; max-height: 400px; background: rgba(6, 9, 17, 0.8); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+          <table class="custom-table">
+            <thead id="sql-table-head"></thead>
+            <tbody id="sql-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- DATA & APP SCRIPTS -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

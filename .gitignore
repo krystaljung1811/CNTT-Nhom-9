@@ -1,0 +1,18 @@
+# Large dataset files (>100MB) exceeding GitHub push limit
+archive/
+data/events.parquet
+
+# Python & Jupyter cache
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Old git backups
+.git_old/
