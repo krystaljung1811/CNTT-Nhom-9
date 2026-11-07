@@ -194,7 +194,7 @@ function initOverview() {
           {
             type: "line",
             label: "Tỷ lệ Hủy giỏ (%)",
-            data: MONTHLY_TRENDS.map((m) => m.avg_removal_rate || m.removal_rate || 70),
+            data: MONTHLY_TRENDS.map((m) => m.removal_rate_pct ?? m.avg_removal_rate ?? m.removal_rate ?? 70),
             borderColor: "#ef4444",
             backgroundColor: "#ef4444",
             borderWidth: 2.5,
@@ -203,7 +203,7 @@ function initOverview() {
           {
             type: "line",
             label: "Tỷ lệ Chốt đơn (%)",
-            data: MONTHLY_TRENDS.map((m) => m.avg_conv_rate || m.conv_rate || 14),
+            data: MONTHLY_TRENDS.map((m) => m.conversion_rate_pct ?? m.avg_conv_rate ?? m.conv_rate ?? 14),
             borderColor: "#10b981",
             backgroundColor: "#10b981",
             borderWidth: 2.5,
@@ -318,12 +318,22 @@ function selectPersona(pid) {
   if (actionsListEl && persona.actions) {
     actionsListEl.innerHTML = persona.actions
       .map(
-        (act) => `
-        <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 13.5px; color: var(--text-main);">
-          <i class="fas fa-check-circle" style="color: #059669; margin-top: 3px;"></i>
-          <span>${act}</span>
+        (act) => {
+          const title = typeof act === "object" ? act.title : act;
+          const desc =
+            typeof act === "object" && act.desc
+              ? `<span style="color: var(--text-dim); display: block; margin-top: 2px; font-size: 12.5px;">${act.desc}</span>`
+              : "";
+          return `
+        <li style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; font-size: 13.5px; color: var(--text-main);">
+          <i class="fas fa-check-circle" style="color: #059669; margin-top: 3px; font-size: 14px;"></i>
+          <div>
+            <strong style="color: var(--text-main);">${title}</strong>
+            ${desc}
+          </div>
         </li>
-      `
+      `;
+        }
       )
       .join("");
   }
@@ -850,7 +860,7 @@ function initSqlConsole() {
       const response = await fetch("/api/sql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: json.stringify ? JSON.stringify({ query: query }) : JSON.stringify({ query }),
+        body: JSON.stringify({ query: query }),
       });
 
       const result = await response.json();
